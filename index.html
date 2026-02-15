@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zakat Calculator - Islamic Shariah Method</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <a href="https://ferdousbhuiya.github.io/Website_for_dataAnalytics_practice/" target="_blank" rel="noopener noreferrer" class="logo-link" title="Visit My Portfolio">
+                    <img src="logo.png" alt="Zakat Calculator Logo" class="logo">
+                </a>
+                <div class="header-text">
+                    <h1>Zakat Calculator</h1>
+                    <p class="subtitle">Calculate and Track Your Zakat - Based on Authentic Islamic Shariah Methods</p>
+                    <p class="subtitle features-list">
+                        ✨ Multi-Currency Support | 📊 Distribution Tracker | 🖨️ Printable Reports
+                    </p>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+                <button class="tab-btn active" onclick="switchTab('calculator')">Zakat Calculator</button>
+                <button class="tab-btn" onclick="switchTab('distribution')">Distribution Tracker</button>
+                <button class="tab-btn" onclick="switchTab('contact')">Contact & Suggestions</button>
+            </div>
+
+            <!-- Calculator Tab -->
+            <div id="calculator-tab" class="tab-content active">
+                <div class="input-section">
+                
+                <!-- Quick Guide -->
+                <div class="quick-guide">
+                    <h3>📋 Quick Start Guide</h3>
+                    <ol>
+                        <li>Enter gold/silver prices (or click "Fetch" for current rates)</li>
+                        <li>Select your preferred display currency</li>
+                        <li>Enter your assets (gold, silver, cash, business, etc.)</li>
+                        <li>Click "Calculate Zakat" to see your results</li>
+                        <li>Track distributions in the "Distribution Tracker" tab</li>
+                    </ol>
+                </div>
+                
+                <div class="section-card">
+                    <h2>Precious Metals</h2>
+                    
+                    <div class="price-section">
+                        <h3>Market Prices (per gram)</h3>
+                        <div class="form-group">
+                            <label for="goldPrice">Gold Price (per gram):</label>
+                            <div class="price-input-group">
+                                <select id="goldCurrency" class="currency-select">
+                                    <option value="USD">USD ($)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="AED">AED (د.إ)</option>
+                                    <option value="PKR">PKR (₨)</option>
+                                    <option value="INR">INR (₹)</option>
+                                    <option value="SAR">SAR (﷼)</option>
+                                </select>
+                                <input type="number" id="goldPrice" placeholder="Gold price" step="0.01" min="0">
+                                <button class="fetch-btn" onclick="fetchGoldPrice()">Fetch</button>
+                            </div>
+                            <small>Current approximate: $65-67/gram</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="silverPrice">Silver Price (per gram):</label>
+                            <div class="price-input-group">
+                                <select id="silverCurrency" class="currency-select">
+                                    <option value="USD">USD ($)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="AED">AED (د.إ)</option>
+                                    <option value="PKR">PKR (₨)</option>
+                                    <option value="INR">INR (₹)</option>
+                                    <option value="SAR">SAR (﷼)</option>
+                                </select>
+                                <input type="number" id="silverPrice" placeholder="Silver price" step="0.01" min="0">
+                                <button class="fetch-btn" onclick="fetchSilverPrice()">Fetch</button>
+                            </div>
+                            <small>Current approximate: $0.75-0.85/gram</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Your Preferred Currency:</label>
+                            <select id="preferredCurrency" onchange="updateCurrencyDisplay()" class="currency-select-large">
+                                <option value="USD">USD - US Dollar ($)</option>
+                                <option value="EUR">EUR - Euro (€)</option>
+                                <option value="GBP">GBP - British Pound (£)</option>
+                                <option value="AED">AED - UAE Dirham (د.إ)</option>
+                                <option value="PKR">PKR - Pakistani Rupee (₨)</option>
+                                <option value="INR">INR - Indian Rupee (₹)</option>
+                                <option value="SAR">SAR - Saudi Riyal (﷼)</option>
+                                <option value="EGP">EGP - Egyptian Pound (£)</option>
+                                <option value="BDT">BDT - Bangladeshi Taka (৳)</option>
+                                <option value="MYR">MYR - Malaysian Ringgit (RM)</option>
+                                <option value="SGD">SGD - Singapore Dollar ($)</option>
+                                <option value="AUD">AUD - Australian Dollar ($)</option>
+                                <option value="CAD">CAD - Canadian Dollar ($)</option>
+                                <option value="JPY">JPY - Japanese Yen (¥)</option>
+                                <option value="CNY">CNY - Chinese Yuan (¥)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <hr class="section-divider">
+
+                    <div class="nisab-section">
+                        <h3>Nisab (Minimum Threshold) Calculation</h3>
+                        <p class="info-text">Nisab is the minimum amount of wealth that triggers Zakat obligation. It's calculated based on gold or silver values.</p>
+                        
+                        <div class="nisab-display">
+                            <div class="nisab-item">
+                                <span class="label">Gold-based Nisab (87.48g):</span>
+                                <span class="value" id="nisabGold">$0.00</span>
+                            </div>
+                            <div class="nisab-item">
+                                <span class="label">Silver-based Nisab (612.36g):</span>
+                                <span class="value" id="nisabSilver">$0.00</span>
+                            </div>
+                            <div class="nisab-item highlight">
+                                <span class="label">Active Nisab (whichever is lower):</span>
+                                <span class="value" id="activeNisab">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="section-divider">
+
+                    <h3>Your Wealth Details</h3>
+
+                    <div class="form-group">
+                        <label>Gold You Own:</label>
+                        <div id="goldEntries" class="dynamic-entries">
+                            <div class="entry-row">
+                                <select class="weightUnit" onchange="updateNisabDisplay()">
+                                    <option value="grams">Grams</option>
+                                    <option value="vori">Vori (1 Vori = 11.66g)</option>
+                                </select>
+                                <input type="number" class="goldAmountInput" placeholder="0" step="0.01" min="0" onchange="updateNisabDisplay()" onkeyup="updateNisabDisplay()">
+                                <button class="deleteBtn" onclick="deleteEntry(this)" style="display:none;">✕</button>
+                            </div>
+                        </div>
+                        <button class="addMoreBtn" onclick="addGoldEntry()">+ Add More Gold</button>
+                        <small>Gold jewelry, bullion, coins, etc.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Silver You Own:</label>
+                        <div id="silverEntries" class="dynamic-entries">
+                            <div class="entry-row">
+                                <select class="weightUnit" onchange="updateNisabDisplay()">
+                                    <option value="grams">Grams</option>
+                                    <option value="vori">Vori (1 Vori = 11.66g)</option>
+                                </select>
+                                <input type="number" class="silverAmountInput" placeholder="0" step="0.01" min="0" onchange="updateNisabDisplay()" onkeyup="updateNisabDisplay()">
+                                <button class="deleteBtn" onclick="deleteEntry(this)" style="display:none;">✕</button>
+                            </div>
+                        </div>
+                        <button class="addMoreBtn" onclick="addSilverEntry()">+ Add More Silver</button>
+                        <small>Silver jewelry, bullion, coins, etc.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cash & Bank Balance:</label>
+                        <div id="cashEntries" class="dynamic-entries">
+                            <div class="entry-row">
+                                <select class="assetCurrency" onchange="updateCurrencyDisplay()">
+                                    <option value="USD">USD ($)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="AED">AED (د.إ)</option>
+                                    <option value="PKR">PKR (₨)</option>
+                                    <option value="INR">INR (₹)</option>
+                                    <option value="SAR">SAR (﷼)</option>
+                                    <option value="EGP">EGP (£)</option>
+                                    <option value="BDT">BDT (৳)</option>
+                                    <option value="MYR">MYR (RM)</option>
+                                    <option value="SGD">SGD ($)</option>
+                                    <option value="AUD">AUD ($)</option>
+                                    <option value="CAD">CAD ($)</option>
+                                    <option value="JPY">JPY (¥)</option>
+                                    <option value="CNY">CNY (¥)</option>
+                                </select>
+                                <input type="number" class="cashAmountInput" placeholder="0" step="0.01" min="0">
+                                <button class="deleteBtn" onclick="deleteEntry(this)" style="display:none;">✕</button>
+                            </div>
+                        </div>
+                        <button class="addMoreBtn" onclick="addCashEntry()">+ Add More Cash/Banks</button>
+                        <small>All liquid funds held for over 1 lunar year</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Business Inventory & Stock:</label>
+                        <div id="businessEntries" class="dynamic-entries">
+                            <div class="entry-row">
+                                <select class="assetCurrency" onchange="updateCurrencyDisplay()">
+                                    <option value="USD">USD ($)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="AED">AED (د.إ)</option>
+                                    <option value="PKR">PKR (₨)</option>
+                                    <option value="INR">INR (₹)</option>
+                                    <option value="SAR">SAR (﷼)</option>
+                                    <option value="EGP">EGP (£)</option>
+                                    <option value="BDT">BDT (৳)</option>
+                                    <option value="MYR">MYR (RM)</option>
+                                    <option value="SGD">SGD ($)</option>
+                                    <option value="AUD">AUD ($)</option>
+                                    <option value="CAD">CAD ($)</option>
+                                    <option value="JPY">JPY (¥)</option>
+                                    <option value="CNY">CNY (¥)</option>
+                                </select>
+                                <input type="number" class="businessAmountInput" placeholder="0" step="0.01" min="0">
+                                <button class="deleteBtn" onclick="deleteEntry(this)" style="display:none;">✕</button>
+                            </div>
+                        </div>
+                        <button class="addMoreBtn" onclick="addBusinessEntry()">+ Add More Business Inventory</button>
+                        <small>Merchandise held for sale</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Other Investable Assets:</label>
+                        <div id="otherAssetEntries" class="dynamic-entries">
+                            <div class="entry-row">
+                                <select class="assetCurrency" onchange="updateCurrencyDisplay()">
+                                    <option value="USD">USD ($)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="AED">AED (د.إ)</option>
+                                    <option value="PKR">PKR (₨)</option>
+                                    <option value="INR">INR (₹)</option>
+                                    <option value="SAR">SAR (﷼)</option>
+                                    <option value="EGP">EGP (£)</option>
+                                    <option value="BDT">BDT (৳)</option>
+                                    <option value="MYR">MYR (RM)</option>
+                                    <option value="SGD">SGD ($)</option>
+                                    <option value="AUD">AUD ($)</option>
+                                    <option value="CAD">CAD ($)</option>
+                                    <option value="JPY">JPY (¥)</option>
+                                    <option value="CNY">CNY (¥)</option>
+                                </select>
+                                <input type="number" class="otherAssetInput" placeholder="0" step="0.01" min="0">
+                                <button class="deleteBtn" onclick="deleteEntry(this)" style="display:none;">✕</button>
+                            </div>
+                        </div>
+                        <button class="addMoreBtn" onclick="addOtherAssetEntry()">+ Add More Other Assets</button>
+                        <small>Stocks, bonds, real estate investments, etc.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Debt & Liabilities:</label>
+                        <div id="liabilityEntries" class="dynamic-entries">
+                            <div class="entry-row">
+                                <select class="assetCurrency" onchange="updateCurrencyDisplay()">
+                                    <option value="USD">USD ($)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="AED">AED (د.إ)</option>
+                                    <option value="PKR">PKR (₨)</option>
+                                    <option value="INR">INR (₹)</option>
+                                    <option value="SAR">SAR (﷼)</option>
+                                    <option value="EGP">EGP (£)</option>
+                                    <option value="BDT">BDT (৳)</option>
+                                    <option value="MYR">MYR (RM)</option>
+                                    <option value="SGD">SGD ($)</option>
+                                    <option value="AUD">AUD ($)</option>
+                                    <option value="CAD">CAD ($)</option>
+                                    <option value="JPY">JPY (¥)</option>
+                                    <option value="CNY">CNY (¥)</option>
+                                </select>
+                                <input type="number" class="liabilityInput" placeholder="0" step="0.01" min="0">
+                                <button class="deleteBtn" onclick="deleteEntry(this)" style="display:none;">✕</button>
+                            </div>
+                        </div>
+                        <button class="addMoreBtn" onclick="addLiabilityEntry()">+ Add More Liabilities</button>
+                        <small>Deducted from total wealth before Zakat calculation</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Personal Expenses & Basic Needs (not counted):</label>
+                        <p class="info-text">The following are excluded: personal residence, personal vehicle, household goods, professional tools, and amounts needed for basic living expenses.</p>
+                    </div>
+
+                    <button class="calculate-btn" onclick="calculateZakat()">Calculate Zakat</button>
+                </div>
+                </div>
+
+                <!-- Right Panel: Results -->
+                <div class="results-section">
+                <div class="section-card results-card">
+                    <h2>Zakat Calculation Results</h2>
+
+                    <div class="results-group">
+                        <h3>Wealth Assessment</h3>
+                        <div class="result-item">
+                            <span class="label">Gold Value:</span>
+                            <span class="value" id="resultGoldValue">$0.00</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">Silver Value:</span>
+                            <span class="value" id="resultSilverValue">$0.00</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">Cash & Banks:</span>
+                            <span class="value" id="resultCashValue">$0.00</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">Business Inventory:</span>
+                            <span class="value" id="resultInventoryValue">$0.00</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">Other Assets:</span>
+                            <span class="value" id="resultOtherValue">$0.00</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">Liabilities:</span>
+                            <span class="value" id="resultLiabilities">-$0.00</span>
+                        </div>
+                        <div class="result-item highlight">
+                            <span class="label">Total Wealth (Zakatable):</span>
+                            <span class="value" id="resultTotalWealth">$0.00</span>
+                        </div>
+                    </div>
+
+                    <hr class="small-divider">
+
+                    <div class="results-group">
+                        <h3>Nisab Status</h3>
+                        <div class="result-item">
+                            <span class="label">Applicable Nisab:</span>
+                            <span class="value" id="resultApplicableNisab">$0.00</span>
+                        </div>
+                        <div class="result-item" id="nisabStatus">
+                            <span class="label">Status:</span>
+                            <span class="value status-pending">Pending</span>
+                        </div>
+                    </div>
+
+                    <hr class="small-divider">
+
+                    <div class="results-group final-result">
+                        <h3>Your Zakat Due</h3>
+                        <div class="result-item">
+                            <span class="label">Preferred Currency:</span>
+                            <span class="value" id="displayCurrency">USD</span>
+                        </div>
+                        <div class="result-item highlight-large">
+                            <span class="label">Zakat Amount:</span>
+                            <span class="value large" id="resultZakat">0.00</span>
+                            <span class="value-currency" id="resultZakatSymbol">$</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">Equivalent in USD:</span>
+                            <span class="value" id="resultZakatUSD">$0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="zakat-info">
+                        <p><strong>Remember:</strong></p>
+                        <ul>
+                            <li>Zakat is only due if total wealth exceeds the Nisab</li>
+                            <li>Zakat becomes due after 1 Lunar Year of holding the wealth</li>
+                            <li>The rate is 2.5% for gold, silver, cash, and investments</li>
+                            <li>Different rates apply to agricultural produce and livestock</li>
+                            <li>This calculation excludes agricultural and livestock Zakat</li>
+                        </ul>
+                    </div>
+
+                    <button class="reset-btn" onclick="resetForm()">Clear All</button>
+                </div>
+                </div>
+            </div>
+
+            <!-- Distribution Tracker Tab -->
+            <div id="distribution-tab" class="tab-content">
+                <div class="section-card">
+                    <h2>📊 Zakat Distribution Tracker</h2>
+                    <p class="subtitle">Track where you distributed your Zakat and monitor your balance</p>
+
+                    <!-- Zakat Balance Overview -->
+                    <div class="balance-overview">
+                        <h3>Zakat Balance Overview</h3>
+                        <div class="balance-cards">
+                            <div class="balance-card total">
+                                <div class="card-icon">💰</div>
+                                <div class="card-content">
+                                    <label>Total Zakat Due</label>
+                                    <div class="value" id="totalZakatDue">$ 0.00</div>
+                                </div>
+                            </div>
+                            <div class="balance-card distributed">
+                                <div class="card-icon">✅</div>
+                                <div class="card-content">
+                                    <label>Total Distributed</label>
+                                    <div class="value" id="totalDistributed">$ 0.00</div>
+                                </div>
+                            </div>
+                            <div class="balance-card remaining">
+                                <div class="card-icon">⏳</div>
+                                <div class="card-content">
+                                    <label>Remaining Balance</label>
+                                    <div class="value" id="remainingBalance">$ 0.00</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-container">
+                            <div class="progress-label">
+                                <span>Distribution Progress</span>
+                                <span id="progressPercent">0%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="distributionProgress"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="small-divider">
+
+                    <!-- Distribution Form -->
+                    <div class="distribution-form">
+                        <h3>Add Distribution Record</h3>
+                        
+                        <div class="form-group">
+                            <label>👤 Recipient Name:</label>
+                            <input type="text" id="recipientName" placeholder="e.g., Muhammad Ali, Al-Amal Orphanage, Community Center, etc.">
+                        </div>
+
+                        <div class="form-group">
+                            <label>📂 Category:</label>
+                            <select id="recipientCategory">
+                                <option value="">-- Select Category --</option>
+                                <option value="Poor">💸 Poor (Fuqara)</option>
+                                <option value="Needy">🤲 Needy (Maskin)</option>
+                                <option value="Zakat Collector">📋 Zakat Collector</option>
+                                <option value="Slaves">⛓️ Slaves & Forced Labor</option>
+                                <option value="Debtors">💳 Debtors</option>
+                                <option value="Fighters">⚔️ Fighters in Cause of Allah</option>
+                                <option value="Traveler">✈️ Stranded Traveler</option>
+                                <option value="Other">📌 Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label>💰 Amount:</label>
+                                <input type="number" id="distributionAmount" placeholder="0.00" step="0.01" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>💱 Currency:</label>
+                                <select id="distributionCurrency">
+                                    <option value="USD">USD ($)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="AED">AED (د.إ)</option>
+                                    <option value="PKR">PKR (₨)</option>
+                                    <option value="INR">INR (₹)</option>
+                                    <option value="SAR">SAR (﷼)</option>
+                                    <option value="EGP">EGP (£)</option>
+                                    <option value="BDT">BDT (৳)</option>
+                                    <option value="MYR">MYR (RM)</option>
+                                    <option value="SGD">SGD ($)</option>
+                                    <option value="AUD">AUD ($)</option>
+                                    <option value="CAD">CAD ($)</option>
+                                    <option value="JPY">JPY (¥)</option>
+                                    <option value="CNY">CNY (¥)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>📅 Date:</label>
+                            <input type="date" id="distributionDate">
+                        </div>
+
+                        <div class="form-group notes-group">
+                            <label>📝 Notes (Optional):</label>
+                            <textarea id="distributionNotes" placeholder="e.g., Distributed to 5 families in the community, Medical emergency aid, Educational support, etc." rows="3"></textarea>
+                            <small>Add any additional details about this distribution</small>
+                        </div>
+
+                        <button class="calculate-btn add-record-btn" onclick="addDistributionRecord()">✅ Add Distribution Record</button>
+                    </div>
+
+                    <hr class="small-divider">
+
+                    <!-- Distribution Records Table -->
+                    <div class="distribution-records">
+                        <div class="records-header">
+                            <h3>Distribution History</h3>
+                            <div class="distribution-controls">
+                                <button class="export-btn" onclick="generateFinalReport()">🖨️ Print Report</button>
+                                <button class="export-btn" onclick="exportDistributionCSV()">📥 Export CSV</button>
+                                <button class="delete-all-btn" onclick="clearAllDistributions()">🗑️ Clear All</button>
+                            </div>
+                        </div>
+
+                        <div class="distribution-table-wrapper">
+                            <table class="distribution-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date (Gregorian)</th>
+                                        <th>Date (Hijri)</th>
+                                        <th>Recipient</th>
+                                        <th>Category</th>
+                                        <th>Amount</th>
+                                        <th>Notes</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="distributionTableBody">
+                                    <tr class="empty-row">
+                                        <td colspan="7">No distribution records yet</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="distribution-summary">
+                            <h4>Quick Stats</h4>
+                            <div class="summary-items">
+                                <div class="summary-item">
+                                    <span class="label">📄 Total Records:</span>
+                                    <span class="value" id="totalRecords">0</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="label">📅 Most Recent:</span>
+                                    <span class="value" id="mostRecentDate">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact & Suggestions Tab -->
+            <div id="contact-tab" class="tab-content">
+                <div class="section-card">
+                    <h2>💬 Contact & Suggestions</h2>
+                    <p class="subtitle">Your feedback helps us improve this calculator for the entire Muslim community</p>
+
+                    <!-- Appeal Section -->
+                    <div class="appeal-section">
+                        <div class="appeal-icon">🤲</div>
+                        <div class="appeal-content">
+                            <h3>السلام عليكم ورحمة الله وبركاته</h3>
+                            <p>
+                                Dear Brothers and Sisters in Islam,
+                            </p>
+                            <p>
+                                This Zakat Calculator has been developed with the sincere intention of serving the Muslim Ummah by making 
+                                it easier to calculate and fulfill this important pillar of Islam. We humbly recognize that perfection belongs 
+                                to Allah (SWT) alone, and there is always room for improvement in our work.
+                            </p>
+                            <p>
+                                <strong>We warmly welcome and greatly appreciate:</strong>
+                            </p>
+                            <ul>
+                                <li>✨ Suggestions for new features or improvements</li>
+                                <li>🔧 Reports of any technical issues or bugs</li>
+                                <li>📚 Corrections or clarifications on Islamic jurisprudence</li>
+                                <li>🌍 Recommendations for additional currency or language support</li>
+                                <li>💡 Ideas to make the calculator more user-friendly</li>
+                                <li>🤝 General feedback and constructive criticism</li>
+                            </ul>
+                            <p>
+                                Your input will help us serve the community better and ensure this tool remains accurate, 
+                                beneficial, and accessible to Muslims worldwide. May Allah (SWT) reward you for taking the time to help improve this service.
+                            </p>
+                            <p class="arabic-text">
+                                جَزَاكَ ٱللَّٰهُ خَيْرًا<br>
+                                <em>(Jazākallāhu Khayran - May Allah reward you with goodness)</em>
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr class="small-divider">
+
+                    <!-- Contact Information -->
+                    <div class="contact-info-section">
+                        <h3>📧 Get In Touch</h3>
+                        <div class="contact-cards">
+                            <div class="contact-card">
+                                <div class="contact-icon">✉️</div>
+                                <div class="contact-details">
+                                    <h4>Email Us</h4>
+                                    <a href="mailto:ferdousbhuiya@gmail.com" class="email-link">ferdousbhuiya@gmail.com</a>
+                                    <p>We typically respond within 24-48 hours</p>
+                                </div>
+                            </div>
+                            
+                            <div class="contact-card">
+                                <div class="contact-icon">⭐</div>
+                                <div class="contact-details">
+                                    <h4>What to Include</h4>
+                                    <ul class="guidelines-list">
+                                        <li>Clear subject line</li>
+                                        <li>Detailed description</li>
+                                        <li>Screenshots (if reporting issues)</li>
+                                        <li>Your browser/device info (if technical)</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="contact-card">
+                                <div class="contact-icon">🌐</div>
+                                <div class="contact-details">
+                                    <h4>Visit My Website</h4>
+                                    <a href="https://ferdousbhuiya.github.io/Website_for_dataAnalytics_practice/" target="_blank" rel="noopener noreferrer" class="email-link">Data Analytics Portfolio</a>
+                                    <p>Explore my other projects and work</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="quick-feedback">
+                            <h4>Quick Feedback Template</h4>
+                            <div class="template-box">
+                                <p><strong>Subject:</strong> [Suggestion/Bug Report/Question/Feedback]</p>
+                                <p><strong>Category:</strong> [Calculator/Distribution Tracker/UI/Shariah Reference/Other]</p>
+                                <p><strong>Description:</strong> [Your detailed message here]</p>
+                                <p><strong>Expected Behavior:</strong> [What you expected to happen]</p>
+                                <p><strong>Actual Behavior:</strong> [What actually happened (if reporting a bug)]</p>
+                            </div>
+                            <a href="mailto:ferdousbhuiya@gmail.com?subject=Zakat Calculator - Suggestion&body=Category:%0D%0A%0D%0ADescription:%0D%0A%0D%0AExpected Behavior:%0D%0A%0D%0AActual Behavior:%0D%0A" class="email-btn">📨 Send Email Now</a>
+                        </div>
+                    </div>
+
+                    <!-- Islamic Reminder -->
+                    <div class="islamic-reminder">
+                        <p>
+                            <strong>Reminder:</strong> "The believers, in their love, mercy, and kindness to one another are like a body: 
+                            if any part of it is ill, the whole body shares its sleeplessness and fever." 
+                            <em>(Sahih Muslim 2586)</em>
+                        </p>
+                        <p>
+                            By helping to improve this tool, you are contributing to the ease of fulfilling Zakat obligations 
+                            for Muslims around the world, insha'Allah.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- References Section -->
+        <section class="references-section">
+            <h2>Shariah References & Methodology</h2>
+            
+            <div class="references-content">
+                <div class="reference-category">
+                    <h3>Islamic Jurisprudence Sources</h3>
+                    <ul>
+                        <li><strong>Quran:</strong>
+                            <ul>
+                                <li>Surah At-Taubah (9:60) - Zakat recipients</li>
+                                <li>Surah Al-An'am (6:141) - Obligation of Zakat</li>
+                                <li>Surah An-Nur (24:56) - Establishment of Zakat</li>
+                            </ul>
+                        </li>
+                        <li><strong>Hadith:</strong>
+                            <ul>
+                                <li>Sahih Al-Bukhari 1395 - Zakat rate of 2.5%</li>
+                                <li>Sahih Muslim 979 - Zakat on gold and silver (Nisab)</li>
+                                <li>Sahih At-Tirmidhi 621 - Zakat requirements and conditions</li>
+                                <li>Sunan Abu Dawud 1563 - Zakat on merchandise</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="reference-category">
+                    <h3>Nisab (Minimum Threshold) Definition</h3>
+                    <p>Based on authentic scholarly consensus, Nisab is the minimum amount of wealth that triggers Zakat obligation:</p>
+                    <ul>
+                        <li><strong>Gold-based Nisab:</strong> 87.48 grams (2.5 Mithqal)</li>
+                        <li><strong>Silver-based Nisab:</strong> 612.36 grams (52.5 Dirham)</li>
+                        <li><strong>Application:</strong> Use whichever is lower in current market value</li>
+                        <li><strong>Source:</strong> Fiqh consensus from major schools (Maliki, Hanafi, Shafi'i, Hanbali)</li>
+                    </ul>
+                </div>
+
+                <div class="reference-category">
+                    <h3>Zakat Rate & Eligible Wealth</h3>
+                    <ul>
+                        <li><strong>Standard Rate:</strong> 2.5% per lunar year (Rub' Al-'Ushr)</li>
+                        <li><strong>Applicable Assets:</strong>
+                            <ul>
+                                <li>Gold and silver (jewelry, bullion, coins)</li>
+                                <li>Cash and monetary assets</li>
+                                <li>Business inventory and merchandise</li>
+                                <li>Stocks, bonds, and investments</li>
+                                <li>Rental income receivable</li>
+                            </ul>
+                        </li>
+                        <li><strong>Excluded Assets:</strong>
+                            <ul>
+                                <li>Personal residence (primary home)</li>
+                                <li>Personal vehicles and transportation</li>
+                                <li>Household furnishings and personal items</li>
+                                <li>Professional tools and equipment</li>
+                                <li>Land for personal use (not investment)</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="reference-category">
+                    <h3>Calculation Period</h3>
+                    <ul>
+                        <li><strong>Zakat Year:</strong> 1 Lunar (Islamic) Year = 354-355 days</li>
+                        <li><strong>Hawl (Possession Period):</strong> Wealth must be held for a complete lunar year</li>
+                        <li><strong>Anniversary Date:</strong> Zakat is typically due on the same date (Hijri calendar) each year</li>
+                        <li><strong>Source:</strong> Hadith in Sunan Ibn Majah 1790 and Sunan At-Tirmidhi 620</li>
+                    </ul>
+                </div>
+
+                <div class="reference-category">
+                    <h3>Zakat Recipients (Asnaf Al-Zakat)</h3>
+                    <p>As mentioned in Surah At-Taubah 9:60, Zakat is for:</p>
+                    <ul>
+                        <li>Al-Fuqara (the extremely poor)</li>
+                        <li>Al-Masakin (the poor)</li>
+                        <li>Aamileen (Zakat administrators)</li>
+                        <li>Mu'allafat Al-Qulub (those whose hearts are inclined to Islam)</li>
+                        <li>Ar-Riqab (those in bondage)</li>
+                        <li>Al-Gharimin (those in debt)</li>
+                        <li>Fi Sabilillah (in the path of Allah)</li>
+                        <li>Ibnu As-Sabil (travelers in need)</li>
+                    </ul>
+                </div>
+
+                <div class="reference-category">
+                    <h3>Scholarly Schools (Madhhabs) on Zakat</h3>
+                    <ul>
+                        <li><strong>Maliki School:</strong> Strict on trade goods valuation, includes all merchandise</li>
+                        <li><strong>Hanafi School:</strong> Requires completion of full lunar year, includes most investments</li>
+                        <li><strong>Shafi'i School:</strong> Similar to Hanafi with minor differences on some assets</li>
+                        <li><strong>Hanbali School:</strong> Includes livestock and agricultural produce calculations</li>
+                        <li><strong>Note:</strong> This calculator follows the consensus approach used by most contemporary Islamic scholars</li>
+                    </ul>
+                </div>
+
+                <div class="reference-category">
+                    <h3>Recommended Resources</h3>
+                    <ul>
+                        <li><strong>English Translations:</strong>
+                            <ul>
+                                <li>"The Lawful and the Prohibited in Islam" by Yusuf al-Qaradawi</li>
+                                <li>"Fiqh al-Zakat" by Yusuf al-Qaradawi (2 volumes)</li>
+                                <li>"The Fiqh of Zakat" by Muhammad 'Abdur-Rahman al-'Arif</li>
+                            </ul>
+                        </li>
+                        <li><strong>Islamic Organizations:</strong>
+                            <ul>
+                                <li>Islamic Relief Worldwide</li>
+                                <li>Muslim Hands</li>
+                                <li>Zakat Foundation International</li>
+                                <li>Local Islamic centers and Masjids</li>
+                            </ul>
+                        </li>
+                        <li><strong>Precious Metal Prices:</strong> Use LBMA (London Bullion Market Association) for gold and silver spot prices</li>
+                    </ul>
+                </div>
+
+                <div class="reference-category important-note">
+                    <h3>⚠️ Important Disclaimer</h3>
+                    <p>This calculator is for educational purposes and estimates only. It is based on Islamic principles and scholarly consensus, but Zakat is a personal religious obligation with specific requirements that may vary based on individual circumstances.</p>
+                    <p><strong>Before paying Zakat:</strong> Consult with your local Islamic scholar, Imam, or an authorized Islamic financial advisor who can review your specific situation, confirm the calculation, and guide you on proper distribution to eligible recipients.</p>
+                    <p>Different schools of Islamic jurisprudence (Madhhabs) may have slight variations in methodology. Ensure your approach aligns with your preferred school of thought or consult qualified scholars.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer Section -->
+        <footer>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>🕌 Zakat Calculator by Mohammed Ferdouse Bhuiya</h3>
+                    <p>Based on Authentic Islamic Shariah Methods</p>
+                    <p class="footer-prayer">May Allah accept from all of us. Ameen.</p>
+                </div>
+
+                <div class="footer-section">
+                    <h3>👨‍💻 Developer</h3>
+                    <p><strong>Mohammed Ferdouse Bhuiya</strong></p>
+                    <div class="footer-links">
+                        <a href="https://ferdousbhuiya.github.io/Website_for_dataAnalytics_practice/" target="_blank" rel="noopener noreferrer" class="footer-link">
+                            🌐 Visit My Portfolio
+                        </a>
+                        <a href="mailto:ferdousbhuiya@gmail.com" class="footer-link">
+                            ✉️ ferdousbhuiya@gmail.com
+                        </a>
+                    </div>
+                </div>
+
+                <div class="footer-section">
+                    <h3>ℹ️ About</h3>
+                    <p>Free tool for the Muslim community</p>
+                    <p>Multi-currency support worldwide</p>
+                    <p>Open for feedback & suggestions</p>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 Zakat Calculator by Mohammed Ferdouse Bhuiya. All rights reserved. | Developed with ❤️ for the Ummah</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
