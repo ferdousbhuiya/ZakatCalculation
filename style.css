@@ -624,6 +624,8 @@ textarea {
 .quran-controls select {
     min-width: 240px;
     flex: 1;
+    background: #fff;
+    color: var(--text-dark);
 }
 
 .quran-now-playing {

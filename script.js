@@ -25,7 +25,7 @@ const EXCHANGE_RATES = {
 };
 
 const TASBIH_STORAGE_KEY = 'digitalTasbihState';
-const QURAN_RECITER_BASE_URL = 'https://everyayah.com/data/Alafasy_128kbps';
+const QURAN_RECITER_BASE_URL = 'https://server8.mp3quran.net/afs';
 const QURAN_SURAH_NAMES = [
     'Al-Fatihah', 'Al-Baqarah', 'Aal-E-Imran', 'An-Nisa', 'Al-Maidah', 'Al-Anam', 'Al-Araf', 'Al-Anfal', 'At-Tawbah', 'Yunus',
     'Hud', 'Yusuf', 'Ar-Rad', 'Ibrahim', 'Al-Hijr', 'An-Nahl', 'Al-Isra', 'Al-Kahf', 'Maryam', 'Ta-Ha',
@@ -157,7 +157,7 @@ function initDigitalTasbih() {
     if (!targetInput || !surahSelect || !quranAudio) return;
 
     loadTasbihState();
-    populateQuranSurahOptions();
+    ensureQuranSurahOptions();
     renderDhikrList();
     renderTasbihCounter();
     updateQuranNowPlaying();
@@ -413,6 +413,19 @@ function populateQuranSurahOptions() {
     select.value = String(currentSurahIndex + 1);
 }
 
+function ensureQuranSurahOptions() {
+    const select = document.getElementById('quranSurahSelect');
+    if (!select) return;
+
+    if (!select.options || select.options.length === 0) {
+        populateQuranSurahOptions();
+    }
+
+    if (!select.value) {
+        select.value = String(currentSurahIndex + 1);
+    }
+}
+
 function formatSurahNumber(index) {
     const surahNumber = index + 1;
     return String(surahNumber).padStart(3, '0');
@@ -432,6 +445,7 @@ function playSurahByIndex(index) {
 
     if (!quranAudio || !surahSelect) return;
 
+    ensureQuranSurahOptions();
     currentSurahIndex = Math.max(0, Math.min(QURAN_SURAH_NAMES.length - 1, index));
     surahSelect.value = String(currentSurahIndex + 1);
 
@@ -453,6 +467,8 @@ function playQuranFromBeginning() {
 function playSelectedSurah() {
     const surahSelect = document.getElementById('quranSurahSelect');
     if (!surahSelect) return;
+
+    ensureQuranSurahOptions();
 
     const selectedNumber = parseInt(surahSelect.value, 10) || 1;
     playSurahByIndex(selectedNumber - 1);
@@ -1115,6 +1131,7 @@ function switchTab(tabName) {
     }
 
     if (tabName === 'tasbih') {
+        ensureQuranSurahOptions();
         renderDhikrList();
         renderTasbihCounter();
         updateQuranNowPlaying();
