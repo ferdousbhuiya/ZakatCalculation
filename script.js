@@ -24,6 +24,28 @@ const EXCHANGE_RATES = {
     'CNY': { name: 'Chinese Yuan', symbol: '¥', toUSD: 0.14 }    // 1 CNY ≈ 0.14 USD
 };
 
+const TASBIH_STORAGE_KEY = 'digitalTasbihState';
+const QURAN_RECITER_BASE_URL = 'https://everyayah.com/data/Alafasy_128kbps';
+const QURAN_SURAH_NAMES = [
+    'Al-Fatihah', 'Al-Baqarah', 'Aal-E-Imran', 'An-Nisa', 'Al-Maidah', 'Al-Anam', 'Al-Araf', 'Al-Anfal', 'At-Tawbah', 'Yunus',
+    'Hud', 'Yusuf', 'Ar-Rad', 'Ibrahim', 'Al-Hijr', 'An-Nahl', 'Al-Isra', 'Al-Kahf', 'Maryam', 'Ta-Ha',
+    'Al-Anbiya', 'Al-Hajj', 'Al-Muminun', 'An-Nur', 'Al-Furqan', 'Ash-Shuara', 'An-Naml', 'Al-Qasas', 'Al-Ankabut', 'Ar-Rum',
+    'Luqman', 'As-Sajdah', 'Al-Ahzab', 'Saba', 'Fatir', 'Ya-Sin', 'As-Saffat', 'Sad', 'Az-Zumar', 'Ghafir',
+    'Fussilat', 'Ash-Shura', 'Az-Zukhruf', 'Ad-Dukhan', 'Al-Jathiyah', 'Al-Ahqaf', 'Muhammad', 'Al-Fath', 'Al-Hujurat', 'Qaf',
+    'Adh-Dhariyat', 'At-Tur', 'An-Najm', 'Al-Qamar', 'Ar-Rahman', 'Al-Waqiah', 'Al-Hadid', 'Al-Mujadila', 'Al-Hashr', 'Al-Mumtahanah',
+    'As-Saff', 'Al-Jumuah', 'Al-Munafiqun', 'At-Taghabun', 'At-Talaq', 'At-Tahrim', 'Al-Mulk', 'Al-Qalam', 'Al-Haqqah', 'Al-Maarij',
+    'Nuh', 'Al-Jinn', 'Al-Muzzammil', 'Al-Muddaththir', 'Al-Qiyamah', 'Al-Insan', 'Al-Mursalat', 'An-Naba', 'An-Naziat', 'Abasa',
+    'At-Takwir', 'Al-Infitar', 'Al-Mutaffifin', 'Al-Inshiqaq', 'Al-Buruj', 'At-Tariq', 'Al-Ala', 'Al-Ghashiyah', 'Al-Fajr', 'Al-Balad',
+    'Ash-Shams', 'Al-Layl', 'Ad-Duha', 'Ash-Sharh', 'At-Tin', 'Al-Alaq', 'Al-Qadr', 'Al-Bayyinah', 'Az-Zalzalah', 'Al-Adiyat',
+    'Al-Qariah', 'At-Takathur', 'Al-Asr', 'Al-Humazah', 'Al-Fil', 'Quraysh', 'Al-Maun', 'Al-Kawthar', 'Al-Kafirun', 'An-Nasr',
+    'Al-Masad', 'Al-Ikhlas', 'Al-Falaq', 'An-Nas'
+];
+
+let tasbihCount = 0;
+let selectedDhikrId = 'default-subhanallah';
+let dhikrItems = [];
+let currentSurahIndex = 0;
+
 // Format number with commas for thousands
 function formatNumber(num) {
     return num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -115,7 +137,345 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Auto-calculate zakat when preferred currency changes
     document.getElementById('preferredCurrency').addEventListener('change', calculateZakat);
+
+    initDigitalTasbih();
 });
+
+function getDefaultDhikrItems() {
+    return [
+        { id: 'default-subhanallah', title: 'SubhanAllah', text: 'سُبْحَانَ ٱللَّٰهِ', imageDataUrl: '' },
+        { id: 'default-alhamdulillah', title: 'Alhamdulillah', text: 'ٱلْحَمْدُ لِلَّٰهِ', imageDataUrl: '' },
+        { id: 'default-allahuakbar', title: 'Allahu Akbar', text: 'ٱللَّٰهُ أَكْبَرُ', imageDataUrl: '' }
+    ];
+}
+
+function initDigitalTasbih() {
+    const targetInput = document.getElementById('tasbihTarget');
+    const surahSelect = document.getElementById('quranSurahSelect');
+    const quranAudio = document.getElementById('quranAudio');
+
+    if (!targetInput || !surahSelect || !quranAudio) return;
+
+    loadTasbihState();
+    populateQuranSurahOptions();
+    renderDhikrList();
+    renderTasbihCounter();
+    updateQuranNowPlaying();
+
+    targetInput.addEventListener('change', function() {
+        const sanitizedTarget = Math.max(1, parseInt(targetInput.value, 10) || 33);
+        targetInput.value = sanitizedTarget;
+        saveTasbihState();
+        renderTasbihCounter();
+    });
+
+    surahSelect.addEventListener('change', function() {
+        const selectedValue = parseInt(surahSelect.value, 10) || 1;
+        currentSurahIndex = Math.max(0, Math.min(QURAN_SURAH_NAMES.length - 1, selectedValue - 1));
+        updateQuranNowPlaying();
+    });
+
+    quranAudio.addEventListener('ended', function() {
+        playNextSurah(true);
+    });
+}
+
+function loadTasbihState() {
+    const targetInput = document.getElementById('tasbihTarget');
+    const savedRaw = localStorage.getItem(TASBIH_STORAGE_KEY);
+
+    if (!savedRaw) {
+        dhikrItems = getDefaultDhikrItems();
+        selectedDhikrId = dhikrItems[0].id;
+        tasbihCount = 0;
+        if (targetInput) targetInput.value = 33;
+        return;
+    }
+
+    try {
+        const savedState = JSON.parse(savedRaw);
+        dhikrItems = Array.isArray(savedState.dhikrItems) && savedState.dhikrItems.length
+            ? savedState.dhikrItems
+            : getDefaultDhikrItems();
+        selectedDhikrId = savedState.selectedDhikrId || dhikrItems[0].id;
+        tasbihCount = Math.max(0, parseInt(savedState.tasbihCount, 10) || 0);
+
+        if (targetInput) {
+            targetInput.value = Math.max(1, parseInt(savedState.tasbihTarget, 10) || 33);
+        }
+    } catch (error) {
+        console.warn('Could not load tasbih state, using defaults.', error);
+        dhikrItems = getDefaultDhikrItems();
+        selectedDhikrId = dhikrItems[0].id;
+        tasbihCount = 0;
+        if (targetInput) targetInput.value = 33;
+    }
+}
+
+function saveTasbihState() {
+    const targetInput = document.getElementById('tasbihTarget');
+    const state = {
+        tasbihCount,
+        tasbihTarget: Math.max(1, parseInt(targetInput?.value, 10) || 33),
+        selectedDhikrId,
+        dhikrItems
+    };
+    localStorage.setItem(TASBIH_STORAGE_KEY, JSON.stringify(state));
+}
+
+function getSelectedDhikr() {
+    return dhikrItems.find(item => item.id === selectedDhikrId) || dhikrItems[0] || { title: 'Dhikr', text: '' };
+}
+
+function renderTasbihCounter() {
+    const countElement = document.getElementById('tasbihCount');
+    const targetInput = document.getElementById('tasbihTarget');
+    const remainingElement = document.getElementById('tasbihRemaining');
+    const progressElement = document.getElementById('tasbihProgress');
+    const selectedElement = document.getElementById('selectedDhikrDisplay');
+
+    if (!countElement || !targetInput || !remainingElement || !progressElement || !selectedElement) return;
+
+    const selectedDhikr = getSelectedDhikr();
+    const target = Math.max(1, parseInt(targetInput.value, 10) || 33);
+    const remaining = Math.max(0, target - tasbihCount);
+    const percent = Math.min(100, (tasbihCount / target) * 100);
+
+    countElement.textContent = tasbihCount;
+    remainingElement.textContent = `Remaining: ${remaining}`;
+    selectedElement.textContent = `Selected Dhikr: ${selectedDhikr.title}`;
+    progressElement.style.width = `${percent}%`;
+}
+
+function incrementTasbih() {
+    tasbihCount += 1;
+    saveTasbihState();
+    renderTasbihCounter();
+}
+
+function decrementTasbih() {
+    tasbihCount = Math.max(0, tasbihCount - 1);
+    saveTasbihState();
+    renderTasbihCounter();
+}
+
+function resetTasbihCounter() {
+    tasbihCount = 0;
+    saveTasbihState();
+    renderTasbihCounter();
+}
+
+function escapeHtml(text) {
+    if (typeof text !== 'string') return '';
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function renderDhikrList() {
+    const listElement = document.getElementById('dhikrList');
+    if (!listElement) return;
+
+    if (!dhikrItems.length) {
+        listElement.innerHTML = '<div class="empty-dhikr">No dhikr added yet.</div>';
+        return;
+    }
+
+    listElement.innerHTML = dhikrItems.map(item => {
+        const isSelected = item.id === selectedDhikrId;
+        const imageHTML = item.imageDataUrl
+            ? `<img src="${item.imageDataUrl}" alt="Dhikr image" class="dhikr-image">`
+            : '';
+
+        return `
+            <div class="dhikr-item ${isSelected ? 'selected' : ''}">
+                <div class="dhikr-item-header">
+                    <strong>${escapeHtml(item.title)}</strong>
+                    <div class="dhikr-actions">
+                        <button class="small-btn" onclick="selectDhikrItem('${item.id}')">Use</button>
+                        <button class="small-btn danger" onclick="deleteDhikrItem('${item.id}')">Delete</button>
+                    </div>
+                </div>
+                <p>${escapeHtml(item.text || '')}</p>
+                ${imageHTML}
+            </div>
+        `;
+    }).join('');
+}
+
+function selectDhikrItem(itemId) {
+    selectedDhikrId = itemId;
+    saveTasbihState();
+    renderDhikrList();
+    renderTasbihCounter();
+}
+
+function deleteDhikrItem(itemId) {
+    const item = dhikrItems.find(dhikr => dhikr.id === itemId);
+    if (!item) return;
+
+    if (item.id.startsWith('default-')) {
+        alert('Default dhikr items cannot be deleted.');
+        return;
+    }
+
+    if (!confirm(`Delete "${item.title}"?`)) return;
+
+    dhikrItems = dhikrItems.filter(dhikr => dhikr.id !== itemId);
+
+    if (!dhikrItems.length) {
+        dhikrItems = getDefaultDhikrItems();
+    }
+
+    if (!dhikrItems.some(dhikr => dhikr.id === selectedDhikrId)) {
+        selectedDhikrId = dhikrItems[0].id;
+        tasbihCount = 0;
+    }
+
+    saveTasbihState();
+    renderDhikrList();
+    renderTasbihCounter();
+}
+
+function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Could not read file'));
+        reader.readAsDataURL(file);
+    });
+}
+
+async function addDhikrItem() {
+    const titleInput = document.getElementById('dhikrTitle');
+    const textInput = document.getElementById('dhikrText');
+    const imageInput = document.getElementById('dhikrImage');
+
+    if (!titleInput || !textInput || !imageInput) return;
+
+    const title = titleInput.value.trim();
+    const text = textInput.value.trim();
+
+    if (!title) {
+        alert('Please enter a title for your dhikr/dua.');
+        return;
+    }
+
+    if (!text) {
+        alert('Please enter dhikr or dua text.');
+        return;
+    }
+
+    let imageDataUrl = '';
+    const selectedFile = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
+
+    if (selectedFile) {
+        const maxFileSizeBytes = 2 * 1024 * 1024;
+        if (selectedFile.size > maxFileSizeBytes) {
+            alert('Please choose an image smaller than 2MB.');
+            return;
+        }
+        imageDataUrl = await fileToDataUrl(selectedFile);
+    }
+
+    const newItem = {
+        id: `custom-${Date.now()}`,
+        title,
+        text,
+        imageDataUrl
+    };
+
+    dhikrItems.unshift(newItem);
+    selectedDhikrId = newItem.id;
+    tasbihCount = 0;
+
+    saveTasbihState();
+    renderDhikrList();
+    renderTasbihCounter();
+
+    titleInput.value = '';
+    textInput.value = '';
+    imageInput.value = '';
+}
+
+function populateQuranSurahOptions() {
+    const select = document.getElementById('quranSurahSelect');
+    if (!select) return;
+
+    select.innerHTML = QURAN_SURAH_NAMES.map((name, index) => {
+        const surahNumber = index + 1;
+        return `<option value="${surahNumber}">${surahNumber}. ${name}</option>`;
+    }).join('');
+
+    select.value = String(currentSurahIndex + 1);
+}
+
+function formatSurahNumber(index) {
+    const surahNumber = index + 1;
+    return String(surahNumber).padStart(3, '0');
+}
+
+function updateQuranNowPlaying() {
+    const nowPlaying = document.getElementById('quranNowPlaying');
+    if (!nowPlaying) return;
+
+    const surahName = QURAN_SURAH_NAMES[currentSurahIndex] || 'Unknown Surah';
+    nowPlaying.textContent = `Now Playing: ${currentSurahIndex + 1}. ${surahName}`;
+}
+
+function playSurahByIndex(index) {
+    const quranAudio = document.getElementById('quranAudio');
+    const surahSelect = document.getElementById('quranSurahSelect');
+
+    if (!quranAudio || !surahSelect) return;
+
+    currentSurahIndex = Math.max(0, Math.min(QURAN_SURAH_NAMES.length - 1, index));
+    surahSelect.value = String(currentSurahIndex + 1);
+
+    const surahCode = formatSurahNumber(currentSurahIndex);
+    const audioUrl = `${QURAN_RECITER_BASE_URL}/${surahCode}.mp3`;
+    quranAudio.src = audioUrl;
+    quranAudio.currentTime = 0;
+    updateQuranNowPlaying();
+
+    quranAudio.play().catch(() => {
+        alert('Tap Play on the audio player to start playback (browser autoplay restriction).');
+    });
+}
+
+function playQuranFromBeginning() {
+    playSurahByIndex(0);
+}
+
+function playSelectedSurah() {
+    const surahSelect = document.getElementById('quranSurahSelect');
+    if (!surahSelect) return;
+
+    const selectedNumber = parseInt(surahSelect.value, 10) || 1;
+    playSurahByIndex(selectedNumber - 1);
+}
+
+function playPreviousSurah() {
+    const previousIndex = Math.max(0, currentSurahIndex - 1);
+    playSurahByIndex(previousIndex);
+}
+
+function playNextSurah(isAutoPlay = false) {
+    if (currentSurahIndex >= QURAN_SURAH_NAMES.length - 1) {
+        if (isAutoPlay) {
+            const nowPlaying = document.getElementById('quranNowPlaying');
+            if (nowPlaying) nowPlaying.textContent = 'Now Playing: Quran playlist finished.';
+        } else {
+            alert('You are at the last Surah in the playlist.');
+        }
+        return;
+    }
+
+    playSurahByIndex(currentSurahIndex + 1);
+}
 
 // Update Nisab display when prices change
 function updateNisabDisplay() {
@@ -734,19 +1094,30 @@ document.head.appendChild(style);
 // Switch between tabs
 function switchTab(tabName) {
     // Hide all tabs
-    document.getElementById('calculator-tab').classList.remove('active');
-    document.getElementById('distribution-tab').classList.remove('active');
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     
     // Remove active from all buttons
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     
     // Show selected tab
     document.getElementById(tabName + '-tab').classList.add('active');
-    event.currentTarget.classList.add('active');
+
+    if (typeof event !== 'undefined' && event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    } else {
+        const tabButton = document.querySelector(`.tab-btn[onclick="switchTab('${tabName}')"]`);
+        if (tabButton) tabButton.classList.add('active');
+    }
     
     // Load distribution records when opening the tab
     if (tabName === 'distribution') {
         loadDistributionRecords();
+    }
+
+    if (tabName === 'tasbih') {
+        renderDhikrList();
+        renderTasbihCounter();
+        updateQuranNowPlaying();
     }
 }
 

@@ -29,6 +29,7 @@
             <div class="tab-navigation">
                 <button class="tab-btn active" onclick="switchTab('calculator')">Zakat Calculator</button>
                 <button class="tab-btn" onclick="switchTab('distribution')">Distribution Tracker</button>
+                <button class="tab-btn" onclick="switchTab('tasbih')">Digital Tasbih & Quran</button>
                 <button class="tab-btn" onclick="switchTab('contact')">Contact & Suggestions</button>
             </div>
 
@@ -546,6 +547,78 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Digital Tasbih & Quran Tab -->
+            <div id="tasbih-tab" class="tab-content">
+                <div class="section-card">
+                    <h2>📿 Digital Tasbih & Quran</h2>
+                    <p class="subtitle">Track your dhikr, save your personal duas, and listen to Quran from the beginning</p>
+
+                    <div class="tasbih-layout">
+                        <div class="tasbih-panel">
+                            <h3>Digital Tasbih Counter</h3>
+                            <div class="tasbih-counter-card">
+                                <div class="tasbih-selected" id="selectedDhikrDisplay">Selected Dhikr: SubhanAllah</div>
+                                <div class="tasbih-count" id="tasbihCount">0</div>
+                                <div class="tasbih-target-row">
+                                    <label for="tasbihTarget">Target:</label>
+                                    <input type="number" id="tasbihTarget" min="1" step="1" value="33" title="Set tasbih target count">
+                                    <span id="tasbihRemaining">Remaining: 33</span>
+                                </div>
+                                <div class="progress-container tasbih-progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="tasbihProgress"></div>
+                                    </div>
+                                </div>
+                                <div class="tasbih-actions">
+                                    <button class="calculate-btn tasbih-main-btn" onclick="incrementTasbih()">+ Count</button>
+                                    <button class="addMoreBtn" onclick="decrementTasbih()">-1</button>
+                                    <button class="reset-btn" onclick="resetTasbihCounter()">Reset</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tasbih-panel">
+                            <h3>Add Custom Dhikr / Dua</h3>
+                            <div class="form-group">
+                                <label for="dhikrTitle">Title:</label>
+                                <input type="text" id="dhikrTitle" placeholder="e.g., Morning Dhikr">
+                            </div>
+                            <div class="form-group">
+                                <label for="dhikrText">Dhikr or Dua Text:</label>
+                                <textarea id="dhikrText" rows="3" placeholder="Type your dhikr or dua here..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="dhikrImage">Add Screenshot/Photo (optional):</label>
+                                <input type="file" id="dhikrImage" accept="image/*" title="Upload dhikr or dua image">
+                                <small>Supported: JPG, PNG, WEBP</small>
+                            </div>
+                            <button class="calculate-btn add-record-btn" onclick="addDhikrItem()">+ Save Dhikr/Dua</button>
+
+                            <div class="dhikr-list-wrap">
+                                <h4>Your Saved Dhikr & Dua</h4>
+                                <div id="dhikrList" class="dhikr-list"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="small-divider">
+
+                    <div class="tasbih-panel">
+                        <h3>🎧 Quran Player</h3>
+                        <p class="info-text">Choose a Surah and listen. Use "Start from Beginning" to begin from Surah Al-Fatihah.</p>
+                        <div class="quran-controls">
+                            <select id="quranSurahSelect" title="Select Quran surah"></select>
+                            <button class="addMoreBtn" onclick="playQuranFromBeginning()">▶ Start from Beginning</button>
+                            <button class="addMoreBtn" onclick="playSelectedSurah()">Play Selected</button>
+                            <button class="addMoreBtn" onclick="playPreviousSurah()">⏮ Previous</button>
+                            <button class="addMoreBtn" onclick="playNextSurah()">⏭ Next</button>
+                        </div>
+                        <div class="quran-now-playing" id="quranNowPlaying">Now Playing: Not started</div>
+                        <audio id="quranAudio" controls preload="none" class="quran-audio-player"></audio>
                     </div>
                 </div>
             </div>
