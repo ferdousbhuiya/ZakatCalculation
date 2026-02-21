@@ -54,7 +54,7 @@
                     <div class="price-section">
                         <h3>Market Prices (per gram)</h3>
                         <div class="form-group">
-                            <label for="goldPrice">Gold Price (per gram):</label>
+                            <label for="goldPrice">Gold Price (per gram, 24K):</label>
                             <div class="price-input-group">
                                 <select id="goldCurrency" class="currency-select">
                                     <option value="USD">USD ($)</option>
@@ -68,7 +68,7 @@
                                 <input type="number" id="goldPrice" placeholder="Gold price" step="0.01" min="0">
                                 <button class="fetch-btn" onclick="fetchGoldPrice()">Fetch</button>
                             </div>
-                            <small>Current approximate: $65-67/gram</small>
+                            <small>Enter 24K gold price. 22K/21K/19K values are calculated automatically per entry.</small>
                         </div>
 
                         <div class="form-group">
@@ -141,6 +141,14 @@
                         <label>Gold You Own:</label>
                         <div id="goldEntries" class="dynamic-entries">
                             <div class="entry-row">
+                                <select class="goldCarat" onchange="updateNisabDisplay()" title="Select gold carat purity">
+                                    <option value="24">24K</option>
+                                    <option value="22">22K</option>
+                                    <option value="21">21K</option>
+                                    <option value="19">19K</option>
+                                    <option value="18">18K</option>
+                                    <option value="14">14K</option>
+                                </select>
                                 <select class="weightUnit" onchange="updateNisabDisplay()">
                                     <option value="grams">Grams</option>
                                     <option value="vori">Vori (1 Vori = 11.66g)</option>
@@ -150,7 +158,7 @@
                             </div>
                         </div>
                         <button class="addMoreBtn" onclick="addGoldEntry()">+ Add More Gold</button>
-                        <small>Gold jewelry, bullion, coins, etc.</small>
+                        <small>Add each gold item with its exact carat and weight.</small>
                     </div>
 
                     <div class="form-group">

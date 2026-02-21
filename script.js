@@ -68,6 +68,12 @@ function convertToGrams(amount, unit) {
     return amount; // Default is already in grams
 }
 
+// Convert 24K base gold price to selected carat price
+function getGoldPriceForCarat(basePrice24K, carat) {
+    const normalizedCarat = parseFloat(carat) || 24;
+    return basePrice24K * (normalizedCarat / 24);
+}
+
 // Initialize calculator
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✓ Multi-Currency Zakat Calculator with Dynamic Entries Initialized');
@@ -171,6 +177,14 @@ function addGoldEntry() {
     const newRow = document.createElement('div');
     newRow.className = 'entry-row';
     newRow.innerHTML = `
+        <select class="goldCarat" onchange="updateNisabDisplay()" title="Select gold carat purity">
+            <option value="24">24K</option>
+            <option value="22">22K</option>
+            <option value="21">21K</option>
+            <option value="19">19K</option>
+            <option value="18">18K</option>
+            <option value="14">14K</option>
+        </select>
         <select class="weightUnit" onchange="updateNisabDisplay()">
             <option value="grams">Grams</option>
             <option value="vori">Vori (1 Vori = 11.66g)</option>
@@ -443,11 +457,18 @@ function calculateZakat() {
         // Gold entries
         const goldEntryRows = document.querySelectorAll('#goldEntries .entry-row');
         let goldAmount = 0;
+        let goldValue = 0;
         goldEntryRows.forEach(row => {
             const amountRaw = parseFloat(row.querySelector('.goldAmountInput').value) || 0;
             const unitSelect = row.querySelector('.weightUnit');
             const unit = unitSelect ? unitSelect.value : 'grams';
-            goldAmount += convertToGrams(amountRaw, unit);
+            const caratSelect = row.querySelector('.goldCarat');
+            const carat = caratSelect ? caratSelect.value : '24';
+            const amountGrams = convertToGrams(amountRaw, unit);
+            const rowGoldPriceUSD = getGoldPriceForCarat(goldPriceUSD, carat);
+
+            goldAmount += amountGrams;
+            goldValue += amountGrams * rowGoldPriceUSD;
         });
         
         // Silver entries
@@ -510,7 +531,6 @@ function calculateZakat() {
         }
 
         // Calculate values in USD (convert all to USD first)
-        const goldValue = goldAmount * goldPriceUSD;
         const silverValue = silverAmount * silverPriceUSD;
         // cashAmountUSD, businessInventoryUSD, otherAssetsUSD, liabilitiesUSD already calculated above
         
@@ -655,13 +675,20 @@ function resetForm() {
         if (firstRow) {
             const input = firstRow.querySelector('input');
             if (input) input.value = '';
-            
-            const sel = firstRow.querySelector('select');
-            if (sel) {
-                if (container.unit) {
-                    sel.value = 'grams';
-                } else {
-                    sel.value = 'USD';
+
+            if (container.id === 'goldEntries') {
+                const caratSelect = firstRow.querySelector('.goldCarat');
+                const unitSelect = firstRow.querySelector('.weightUnit');
+                if (caratSelect) caratSelect.value = '24';
+                if (unitSelect) unitSelect.value = 'grams';
+            } else {
+                const sel = firstRow.querySelector('select');
+                if (sel) {
+                    if (container.unit) {
+                        sel.value = 'grams';
+                    } else {
+                        sel.value = 'USD';
+                    }
                 }
             }
         }
