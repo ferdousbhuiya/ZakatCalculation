@@ -63,8 +63,8 @@ const COUNTRY_TO_CURRENCY = {
 };
 const USER_CURRENCY_PREFS_KEY = 'zakatUserCurrencyPrefs';
 const COUNTRY_DEFAULT_APPLIED_KEY = 'zakatCountryDefaultApplied';
-const MIN_REALISTIC_GOLD_USD_PER_GRAM = 40;
-const MAX_REALISTIC_GOLD_USD_PER_GRAM = 120;
+const MIN_REALISTIC_GOLD_USD_PER_GRAM = 20;
+const MAX_REALISTIC_GOLD_USD_PER_GRAM = 300;
 
 function isRealisticGoldUsdPerGram(value) {
     return Number.isFinite(value)
@@ -395,8 +395,25 @@ async function fetchGoldPriceFromSources() {
             if (!response.ok) continue;
 
             const json = await response.json();
-            const rawValue = extractReasonableNumber(json);
-            const usdPerGram = normalizeGoldToUsdPerGram(rawValue);
+            let usdPerGram = null;
+            let rawValue = null;
+
+            if (source.name.includes('goldprice.org')) {
+                const xauPrice = json?.items?.[0]?.xauPrice ?? json?.tems?.[0]?.xauPrice;
+                rawValue = xauPrice;
+                if (Number.isFinite(xauPrice) && xauPrice > 0) {
+                    usdPerGram = normalizeGoldToUsdPerGram(xauPrice);
+                }
+            } else if (source.name.includes('gold-api.com')) {
+                const ouncePrice = json?.price;
+                rawValue = ouncePrice;
+                if (Number.isFinite(ouncePrice) && ouncePrice > 0) {
+                    usdPerGram = normalizeGoldToUsdPerGram(ouncePrice);
+                }
+            } else {
+                rawValue = extractReasonableNumber(json);
+                usdPerGram = normalizeGoldToUsdPerGram(rawValue);
+            }
 
             if (usdPerGram && usdPerGram > 0) {
                 return {
