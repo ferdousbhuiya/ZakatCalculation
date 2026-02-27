@@ -45,6 +45,128 @@ let tasbihCount = 0;
 let selectedDhikrId = 'default-subhanallah';
 let dhikrItems = [];
 let currentSurahIndex = 0;
+let goldLiveMeta = {
+    isLive: false,
+    source: 'Manual / Default',
+    updatedAt: null,
+    pricePerGramUSD: 66,
+    history: []
+};
+
+const COUNTRY_TO_CURRENCY = {
+    US: 'USD', GB: 'GBP', AE: 'AED', PK: 'PKR', IN: 'INR', SA: 'SAR',
+    EG: 'EGP', BD: 'BDT', MY: 'MYR', SG: 'SGD', AU: 'AUD', CA: 'CAD',
+    JP: 'JPY', CN: 'CNY', DE: 'EUR', FR: 'EUR', ES: 'EUR', IT: 'EUR',
+    NL: 'EUR', BE: 'EUR', AT: 'EUR', IE: 'EUR', PT: 'EUR', FI: 'EUR',
+    GR: 'EUR', CY: 'EUR', MT: 'EUR', LU: 'EUR', EE: 'EUR', LV: 'EUR',
+    LT: 'EUR', SI: 'EUR', SK: 'EUR'
+};
+const USER_CURRENCY_PREFS_KEY = 'zakatUserCurrencyPrefs';
+const COUNTRY_DEFAULT_APPLIED_KEY = 'zakatCountryDefaultApplied';
+
+function getCurrencyForCountry(countryCode) {
+    if (!countryCode) return 'USD';
+    const normalized = String(countryCode).toUpperCase();
+    const currency = COUNTRY_TO_CURRENCY[normalized];
+    return EXCHANGE_RATES[currency] ? currency : 'USD';
+}
+
+function getLocaleCountryCode() {
+    try {
+        const locale = navigator.language || '';
+        const parts = locale.split('-');
+        if (parts.length > 1) return parts[1].toUpperCase();
+    } catch (error) {
+        console.warn('Locale country detection failed', error);
+    }
+    return null;
+}
+
+async function detectUserCountry() {
+    try {
+        const response = await fetch('https://ipapi.co/json/', { cache: 'no-cache' });
+        if (response.ok) {
+            const data = await response.json();
+            const countryCode = (data.country_code || data.country || '').toUpperCase();
+            const countryName = data.country_name || countryCode || 'Unknown';
+            if (countryCode) {
+                return { countryCode, countryName, method: 'IP detection' };
+            }
+        }
+    } catch (error) {
+        console.warn('IP country detection failed', error);
+    }
+
+    const localeCode = getLocaleCountryCode();
+    if (localeCode) {
+        return { countryCode: localeCode, countryName: localeCode, method: 'Browser locale' };
+    }
+
+    return { countryCode: 'US', countryName: 'United States', method: 'Fallback' };
+}
+
+function applyCurrencyDefaults(currency) {
+    const safeCurrency = EXCHANGE_RATES[currency] ? currency : 'USD';
+    const goldCurrency = document.getElementById('goldCurrency');
+    const silverCurrency = document.getElementById('silverCurrency');
+    const preferredCurrency = document.getElementById('preferredCurrency');
+
+    if (goldCurrency) goldCurrency.value = safeCurrency;
+    if (silverCurrency) silverCurrency.value = safeCurrency;
+    if (preferredCurrency) preferredCurrency.value = safeCurrency;
+}
+
+function saveUserCurrencyPreferences() {
+    const goldCurrency = document.getElementById('goldCurrency')?.value || 'USD';
+    const silverCurrency = document.getElementById('silverCurrency')?.value || 'USD';
+    const preferredCurrency = document.getElementById('preferredCurrency')?.value || 'USD';
+
+    const payload = { goldCurrency, silverCurrency, preferredCurrency };
+    localStorage.setItem(USER_CURRENCY_PREFS_KEY, JSON.stringify(payload));
+}
+
+function loadUserCurrencyPreferences() {
+    const raw = localStorage.getItem(USER_CURRENCY_PREFS_KEY);
+    if (!raw) return false;
+
+    try {
+        const parsed = JSON.parse(raw);
+        const goldCurrency = EXCHANGE_RATES[parsed.goldCurrency] ? parsed.goldCurrency : 'USD';
+        const silverCurrency = EXCHANGE_RATES[parsed.silverCurrency] ? parsed.silverCurrency : 'USD';
+        const preferredCurrency = EXCHANGE_RATES[parsed.preferredCurrency] ? parsed.preferredCurrency : 'USD';
+
+        document.getElementById('goldCurrency').value = goldCurrency;
+        document.getElementById('silverCurrency').value = silverCurrency;
+        document.getElementById('preferredCurrency').value = preferredCurrency;
+        return true;
+    } catch (error) {
+        console.warn('Could not load saved currency preferences', error);
+        return false;
+    }
+}
+
+async function applyCountryBasedDefaults() {
+    const locationInfo = document.getElementById('detectedCountryInfo');
+    const detected = await detectUserCountry();
+    const detectedCurrency = getCurrencyForCountry(detected.countryCode);
+
+    const hasSavedPrefs = loadUserCurrencyPreferences();
+    const alreadyApplied = localStorage.getItem(COUNTRY_DEFAULT_APPLIED_KEY) === '1';
+
+    if (!hasSavedPrefs && !alreadyApplied) {
+        applyCurrencyDefaults(detectedCurrency);
+        localStorage.setItem(COUNTRY_DEFAULT_APPLIED_KEY, '1');
+        saveUserCurrencyPreferences();
+    }
+
+    if (locationInfo) {
+        const activePreferredCurrency = document.getElementById('preferredCurrency')?.value || detectedCurrency;
+        const modeLabel = hasSavedPrefs || alreadyApplied ? 'Saved preference' : 'Auto default';
+        locationInfo.textContent = `Detected: ${detected.countryName} (${detected.countryCode}) • Currency: ${activePreferredCurrency} • ${modeLabel} • via ${detected.method}`;
+    }
+
+    updateCurrencyDisplay();
+}
 
 // Format number with commas for thousands
 function formatNumber(num) {
@@ -97,7 +219,7 @@ function getGoldPriceForCarat(basePrice24K, carat) {
 }
 
 // Initialize calculator
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('✓ Multi-Currency Zakat Calculator with Dynamic Entries Initialized');
     
     const goldPriceInput = document.getElementById('goldPrice');
@@ -106,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (goldPriceInput) goldPriceInput.value = '66';
     if (silverPriceInput) silverPriceInput.value = '0.80';
     
-    // Set default currencies for price inputs
+    // Set default currencies for price inputs (will be replaced by detected country defaults)
     document.getElementById('goldCurrency').value = 'USD';
     document.getElementById('silverCurrency').value = 'USD';
     document.getElementById('preferredCurrency').value = 'USD';
@@ -130,6 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateEntryDeleteButtons();
     updateCurrencyLabels();
     updateNisabDisplay();
+    await applyCountryBasedDefaults();
     
     // Set default date for distribution tracker to today
     const today = new Date().toISOString().split('T')[0];
@@ -138,8 +261,213 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-calculate zakat when preferred currency changes
     document.getElementById('preferredCurrency').addEventListener('change', calculateZakat);
 
+    ['goldCurrency', 'silverCurrency', 'preferredCurrency'].forEach(id => {
+        const select = document.getElementById(id);
+        if (select) {
+            select.addEventListener('change', saveUserCurrencyPreferences);
+        }
+    });
+
+    initializeGoldLiveDisplay();
+    fetchGoldPrice(true);
+    setInterval(() => fetchGoldPrice(true), 5 * 60 * 1000);
+
     initDigitalTasbih();
 });
+
+function initializeGoldLiveDisplay() {
+    const currentGoldPrice = parseFloat(document.getElementById('goldPrice')?.value) || 66;
+    goldLiveMeta.pricePerGramUSD = currentGoldPrice;
+    goldLiveMeta.isLive = false;
+    goldLiveMeta.source = 'Manual / Default';
+    goldLiveMeta.updatedAt = new Date();
+    addGoldHistoryPoint(currentGoldPrice, false, 'Manual / Default');
+    renderGoldLiveDisplay();
+}
+
+function addGoldHistoryPoint(usdPerGram, isLive, source) {
+    if (!Number.isFinite(usdPerGram) || usdPerGram <= 0) return;
+
+    const historyPoint = {
+        valueUSD: parseFloat(usdPerGram.toFixed(4)),
+        isLive: !!isLive,
+        source: source || 'Unknown',
+        at: new Date().toISOString()
+    };
+
+    if (!Array.isArray(goldLiveMeta.history)) {
+        goldLiveMeta.history = [];
+    }
+
+    goldLiveMeta.history.push(historyPoint);
+    if (goldLiveMeta.history.length > 5) {
+        goldLiveMeta.history = goldLiveMeta.history.slice(-5);
+    }
+}
+
+function extractReasonableNumber(data) {
+    if (typeof data === 'number' && Number.isFinite(data)) {
+        return data;
+    }
+
+    if (Array.isArray(data)) {
+        for (const item of data) {
+            const found = extractReasonableNumber(item);
+            if (Number.isFinite(found) && found > 0) return found;
+        }
+    }
+
+    if (data && typeof data === 'object') {
+        const priorityKeys = ['price', 'gold', 'xau', 'value', 'ask', 'bid', 'last', 'close'];
+        for (const key of priorityKeys) {
+            if (typeof data[key] === 'number' && Number.isFinite(data[key]) && data[key] > 0) {
+                return data[key];
+            }
+        }
+
+        for (const value of Object.values(data)) {
+            const found = extractReasonableNumber(value);
+            if (Number.isFinite(found) && found > 0) return found;
+        }
+    }
+
+    return null;
+}
+
+function normalizeGoldToUsdPerGram(rawNumber) {
+    if (!Number.isFinite(rawNumber) || rawNumber <= 0) return null;
+
+    if (rawNumber > 1000) {
+        return rawNumber / 31.1034768;
+    }
+
+    if (rawNumber >= 20 && rawNumber <= 200) {
+        return rawNumber;
+    }
+
+    if (rawNumber > 200 && rawNumber <= 1000) {
+        return rawNumber / 31.1034768;
+    }
+
+    return null;
+}
+
+async function fetchGoldPriceFromSources() {
+    const sources = [
+        {
+            name: 'metals.live',
+            url: 'https://api.metals.live/v1/spot/gold'
+        },
+        {
+            name: 'goldprice.org',
+            url: 'https://data-asg.goldprice.org/dbXRates/USD'
+        }
+    ];
+
+    for (const source of sources) {
+        try {
+            const response = await fetch(source.url, { cache: 'no-cache' });
+            if (!response.ok) continue;
+
+            const json = await response.json();
+            const rawValue = extractReasonableNumber(json);
+            const usdPerGram = normalizeGoldToUsdPerGram(rawValue);
+
+            if (usdPerGram && usdPerGram > 0) {
+                return {
+                    success: true,
+                    source: source.name,
+                    usdPerGram: parseFloat(usdPerGram.toFixed(2))
+                };
+            }
+        } catch (error) {
+            console.warn(`Gold source failed: ${source.name}`, error);
+        }
+    }
+
+    return { success: false };
+}
+
+function renderGoldLiveDisplay() {
+    const badge = document.getElementById('goldLiveBadge');
+    const source = document.getElementById('goldLiveSource');
+    const liveGoldUsd = document.getElementById('liveGoldUsd');
+    const liveGoldCurrencyLabel = document.getElementById('liveGoldCurrencyLabel');
+    const liveGoldUsdBase = document.getElementById('liveGoldUsdBase');
+    const gold22k = document.getElementById('liveGold22k');
+    const gold21k = document.getElementById('liveGold21k');
+    const gold19k = document.getElementById('liveGold19k');
+    const updated = document.getElementById('goldLiveUpdated');
+    const trendLine = document.getElementById('goldTrendLine');
+    const trendPoints = document.getElementById('goldTrendPoints');
+
+    if (!badge || !source || !liveGoldUsd || !gold22k || !gold21k || !gold19k || !updated) {
+        return;
+    }
+
+    const usdPrice = parseFloat(goldLiveMeta.pricePerGramUSD) || 0;
+    const preferredCurrency = document.getElementById('preferredCurrency')?.value || 'USD';
+    const converted = convertFromUSD(usdPrice, preferredCurrency);
+    const symbol = getCurrencySymbol(preferredCurrency);
+
+    liveGoldUsd.textContent = `${symbol} ${formatNumber(converted)}`;
+    gold22k.textContent = `${symbol} ${formatNumber(converted * (22 / 24))}`;
+    gold21k.textContent = `${symbol} ${formatNumber(converted * (21 / 24))}`;
+    gold19k.textContent = `${symbol} ${formatNumber(converted * (19 / 24))}`;
+    if (liveGoldCurrencyLabel) {
+        liveGoldCurrencyLabel.textContent = `${preferredCurrency}`;
+    }
+    if (liveGoldUsdBase) {
+        liveGoldUsdBase.textContent = `$ ${formatNumber(usdPrice)}`;
+    }
+
+    badge.textContent = goldLiveMeta.isLive ? 'Live' : 'Approximate';
+    badge.classList.toggle('live', goldLiveMeta.isLive);
+    badge.classList.toggle('stale', !goldLiveMeta.isLive);
+
+    source.textContent = `Source: ${goldLiveMeta.source}`;
+
+    const updatedText = goldLiveMeta.updatedAt
+        ? new Date(goldLiveMeta.updatedAt).toLocaleString()
+        : 'Not yet';
+    updated.textContent = `Updated: ${updatedText}`;
+
+    if (trendLine && trendPoints) {
+        const history = Array.isArray(goldLiveMeta.history) ? goldLiveMeta.history.slice(-5) : [];
+
+        if (history.length < 2) {
+            trendLine.setAttribute('points', '');
+            trendPoints.textContent = 'No trend points yet';
+            return;
+        }
+
+        const convertedHistory = history.map(point => convertFromUSD(point.valueUSD, preferredCurrency));
+        const minPrice = Math.min(...convertedHistory);
+        const maxPrice = Math.max(...convertedHistory);
+        const chartWidth = 200;
+        const chartHeight = 52;
+        const paddingX = 8;
+        const paddingY = 6;
+        const drawWidth = chartWidth - (paddingX * 2);
+        const drawHeight = chartHeight - (paddingY * 2);
+        const spread = Math.max(0.0001, maxPrice - minPrice);
+
+        const points = convertedHistory.map((value, index) => {
+            const x = paddingX + (drawWidth * index / (convertedHistory.length - 1));
+            const y = paddingY + (drawHeight * (1 - ((value - minPrice) / spread)));
+            return `${x.toFixed(2)},${y.toFixed(2)}`;
+        }).join(' ');
+
+        trendLine.setAttribute('points', points);
+
+        trendPoints.innerHTML = history.map((point, index) => {
+            const localTime = new Date(point.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const displayValue = formatNumber(convertedHistory[index]);
+            const mode = point.isLive ? 'L' : 'A';
+            return `<span class="trend-point">${mode} ${localTime}: ${symbol}${displayValue}</span>`;
+        }).join('');
+    }
+}
 
 function getDefaultDhikrItems() {
     return [
@@ -504,6 +832,9 @@ function updateNisabDisplay() {
     const goldPriceUSD = convertToUSD(goldPrice, goldCurrency);
     const silverPriceUSD = convertToUSD(silverPrice, silverCurrency);
 
+    goldLiveMeta.pricePerGramUSD = goldPriceUSD;
+    renderGoldLiveDisplay();
+
     const nisabGold = goldPriceUSD * GOLD_NISAB_GRAMS;
     const nisabSilver = silverPriceUSD * SILVER_NISAB_GRAMS;
     const activeNisab = Math.min(nisabGold, nisabSilver);
@@ -523,6 +854,7 @@ function updateNisabDisplay() {
 function updateCurrencyDisplay() {
     updateNisabDisplay();
     updateCurrencyLabels();
+    renderGoldLiveDisplay();
 }
 
 // Update currency labels throughout the form
@@ -729,46 +1061,60 @@ function updateEntryDeleteButtons() {
 }
 
 // Fetch current gold price from API with multiple fallbacks
-async function fetchGoldPrice() {
-    const button = event.target;
-    button.textContent = 'Fetching...';
-    button.disabled = true;
+async function fetchGoldPrice(isSilent = false, triggerButton = null) {
+    const button = triggerButton || (typeof event !== 'undefined' ? event.target : null);
+    if (button) {
+        button.textContent = 'Fetching...';
+        button.disabled = true;
+    }
     
     try {
-        // Try metals.live API
-        try {
-            const response = await fetch('https://api.metals.live/v1/spot/gold');
-            if (response.ok) {
-                const data = await response.json();
-                if (data && data.price) {
-                    const pricePerGram = (data.price / 31.1035).toFixed(2);
-                    document.getElementById('goldPrice').value = pricePerGram;
-                    document.getElementById('goldCurrency').value = 'USD';
-                    updateNisabDisplay();
-                    button.textContent = 'Fetch';
-                    button.disabled = false;
-                    alert('✓ Gold price updated successfully!');
-                    return;
-                }
+        const liveResult = await fetchGoldPriceFromSources();
+        if (liveResult.success) {
+            const targetCurrency = document.getElementById('preferredCurrency')?.value || 'USD';
+            const localizedPrice = convertFromUSD(liveResult.usdPerGram, targetCurrency);
+            document.getElementById('goldPrice').value = parseFloat(localizedPrice.toFixed(2));
+            document.getElementById('goldCurrency').value = targetCurrency;
+            goldLiveMeta.isLive = true;
+            goldLiveMeta.source = liveResult.source;
+            goldLiveMeta.updatedAt = new Date().toISOString();
+            goldLiveMeta.pricePerGramUSD = liveResult.usdPerGram;
+            addGoldHistoryPoint(liveResult.usdPerGram, true, liveResult.source);
+            renderGoldLiveDisplay();
+            updateNisabDisplay();
+            if (!isSilent) {
+                alert('✓ Gold live price updated successfully.');
             }
-        } catch (err) {
-            console.log('metals.live API failed, using fallback...');
+            return;
         }
 
-        // Fallback: Use approximate current price
         const fallbackPrice = 66;
-        document.getElementById('goldPrice').value = fallbackPrice;
-        document.getElementById('goldCurrency').value = 'USD';
+        const targetCurrency = document.getElementById('preferredCurrency')?.value || 'USD';
+        const fallbackLocalized = convertFromUSD(fallbackPrice, targetCurrency);
+        document.getElementById('goldPrice').value = parseFloat(fallbackLocalized.toFixed(2));
+        document.getElementById('goldCurrency').value = targetCurrency;
+        goldLiveMeta.isLive = false;
+        goldLiveMeta.source = 'Fallback estimate';
+        goldLiveMeta.updatedAt = new Date().toISOString();
+        goldLiveMeta.pricePerGramUSD = fallbackPrice;
+        addGoldHistoryPoint(fallbackPrice, false, 'Fallback estimate');
+        renderGoldLiveDisplay();
         updateNisabDisplay();
-        alert('⚠️ Using fallback price ($' + fallbackPrice + '/gram). Current market: ~$65-67/gram.');
+        if (!isSilent) {
+            alert('⚠️ Live source unavailable. Using fallback estimate.');
+        }
         
     } catch (error) {
         console.error('Error:', error);
-        alert('⚠️ Could not fetch price. Please enter manually. Current market: ~$65-67/gram');
+        if (!isSilent) {
+            alert('⚠️ Could not fetch live gold price. Please enter manually.');
+        }
+    } finally {
+        if (button) {
+            button.textContent = 'Fetch';
+            button.disabled = false;
+        }
     }
-    
-    button.textContent = 'Fetch';
-    button.disabled = false;
 }
 
 // Fetch current silver price from API with multiple fallbacks

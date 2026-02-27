@@ -67,9 +67,28 @@
                                     <option value="SAR">SAR (﷼)</option>
                                 </select>
                                 <input type="number" id="goldPrice" placeholder="Gold price" step="0.01" min="0">
-                                <button class="fetch-btn" onclick="fetchGoldPrice()">Fetch</button>
+                                <button class="fetch-btn" onclick="fetchGoldPrice(false, this)">Fetch</button>
                             </div>
                             <small>Enter 24K gold price. 22K/21K/19K values are calculated automatically per entry.</small>
+                            <div class="live-gold-box" id="liveGoldBox">
+                                <div class="live-gold-header">
+                                    <span id="goldLiveBadge" class="gold-live-badge stale">Approximate</span>
+                                    <span id="goldLiveSource">Source: Manual / Default</span>
+                                </div>
+                                <div class="live-gold-main">Live 24K (<span id="liveGoldCurrencyLabel">Preferred</span>/gram): <strong id="liveGoldUsd">--</strong></div>
+                                <div class="live-gold-base">USD base: <span id="liveGoldUsdBase">--</span> /gram</div>
+                                <div class="live-gold-carat">
+                                    22K: <span id="liveGold22k">--</span> | 21K: <span id="liveGold21k">--</span> | 19K: <span id="liveGold19k">--</span>
+                                </div>
+                                <small id="goldLiveUpdated">Updated: Not yet</small>
+                                <div class="gold-trend-wrap">
+                                    <div class="gold-trend-title">Last 5 updates trend</div>
+                                    <svg id="goldTrendChart" class="gold-trend-chart" viewBox="0 0 200 52" preserveAspectRatio="none" aria-label="Gold price trend chart">
+                                        <polyline id="goldTrendLine" fill="none" stroke-width="2"></polyline>
+                                    </svg>
+                                    <div id="goldTrendPoints" class="gold-trend-points">No trend points yet</div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -109,6 +128,7 @@
                                 <option value="JPY">JPY - Japanese Yen (¥)</option>
                                 <option value="CNY">CNY - Chinese Yuan (¥)</option>
                             </select>
+                            <small id="detectedCountryInfo">Detected location: Checking...</small>
                         </div>
                     </div>
 
