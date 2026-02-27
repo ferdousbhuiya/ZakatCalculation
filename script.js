@@ -63,8 +63,8 @@ const COUNTRY_TO_CURRENCY = {
 };
 const USER_CURRENCY_PREFS_KEY = 'zakatUserCurrencyPrefs';
 const COUNTRY_DEFAULT_APPLIED_KEY = 'zakatCountryDefaultApplied';
-const MIN_REALISTIC_GOLD_USD_PER_GRAM = 30;
-const MAX_REALISTIC_GOLD_USD_PER_GRAM = 300;
+const MIN_REALISTIC_GOLD_USD_PER_GRAM = 40;
+const MAX_REALISTIC_GOLD_USD_PER_GRAM = 120;
 
 function isRealisticGoldUsdPerGram(value) {
     return Number.isFinite(value)
@@ -380,7 +380,11 @@ async function fetchGoldPriceFromSources() {
             url: 'https://api.metals.live/v1/spot/gold'
         },
         {
-            name: 'goldprice.org',
+            name: 'api.gold-api.com',
+            url: 'https://api.gold-api.com/price/XAU'
+        },
+        {
+            name: 'goldprice.org (fallback)',
             url: 'https://data-asg.goldprice.org/dbXRates/USD'
         }
     ];
