@@ -305,28 +305,34 @@ function addGoldHistoryPoint(usdPerGram, isLive, source) {
     }
 }
 
-function extractReasonableNumber(data) {
+function extractReasonableNumber(data, parentKey = '') {
+    const key = String(parentKey || '').toLowerCase();
+    const isTimeField = /(time|timestamp|ts|date|updated|created|epoch)/i.test(key);
+
     if (typeof data === 'number' && Number.isFinite(data)) {
+        if (isTimeField) return null;
         return data;
     }
 
     if (Array.isArray(data)) {
         for (const item of data) {
-            const found = extractReasonableNumber(item);
+            const found = extractReasonableNumber(item, parentKey);
             if (Number.isFinite(found) && found > 0) return found;
         }
     }
 
     if (data && typeof data === 'object') {
-        const priorityKeys = ['price', 'gold', 'xau', 'value', 'ask', 'bid', 'last', 'close'];
-        for (const key of priorityKeys) {
-            if (typeof data[key] === 'number' && Number.isFinite(data[key]) && data[key] > 0) {
-                return data[key];
+        const priorityKeys = ['price', 'gold', 'xau', 'value', 'ask', 'bid', 'last', 'close', 'ounce', 'oz'];
+        for (const priorityKey of priorityKeys) {
+            const matchedKey = Object.keys(data).find(k => k.toLowerCase().includes(priorityKey));
+            if (matchedKey) {
+                const found = extractReasonableNumber(data[matchedKey], matchedKey);
+                if (Number.isFinite(found) && found > 0) return found;
             }
         }
 
-        for (const value of Object.values(data)) {
-            const found = extractReasonableNumber(value);
+        for (const [objectKey, value] of Object.entries(data)) {
+            const found = extractReasonableNumber(value, objectKey);
             if (Number.isFinite(found) && found > 0) return found;
         }
     }
@@ -336,6 +342,11 @@ function extractReasonableNumber(data) {
 
 function normalizeGoldToUsdPerGram(rawNumber) {
     if (!Number.isFinite(rawNumber) || rawNumber <= 0) return null;
+
+    // Ignore unrealistic values (usually timestamps) before conversion
+    if (rawNumber > 10000) {
+        return null;
+    }
 
     if (rawNumber > 1000) {
         return rawNumber / 31.1034768;
@@ -380,6 +391,8 @@ async function fetchGoldPriceFromSources() {
                     usdPerGram: parseFloat(usdPerGram.toFixed(2))
                 };
             }
+
+            console.warn(`Gold source returned unusable value: ${source.name}`, rawValue);
         } catch (error) {
             console.warn(`Gold source failed: ${source.name}`, error);
         }
