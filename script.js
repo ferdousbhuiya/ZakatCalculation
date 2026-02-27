@@ -63,6 +63,14 @@ const COUNTRY_TO_CURRENCY = {
 };
 const USER_CURRENCY_PREFS_KEY = 'zakatUserCurrencyPrefs';
 const COUNTRY_DEFAULT_APPLIED_KEY = 'zakatCountryDefaultApplied';
+const MIN_REALISTIC_GOLD_USD_PER_GRAM = 30;
+const MAX_REALISTIC_GOLD_USD_PER_GRAM = 300;
+
+function isRealisticGoldUsdPerGram(value) {
+    return Number.isFinite(value)
+        && value >= MIN_REALISTIC_GOLD_USD_PER_GRAM
+        && value <= MAX_REALISTIC_GOLD_USD_PER_GRAM;
+}
 
 function getCurrencyForCountry(countryCode) {
     if (!countryCode) return 'USD';
@@ -349,15 +357,17 @@ function normalizeGoldToUsdPerGram(rawNumber) {
     }
 
     if (rawNumber > 1000) {
-        return rawNumber / 31.1034768;
+        const normalized = rawNumber / 31.1034768;
+        return isRealisticGoldUsdPerGram(normalized) ? normalized : null;
     }
 
     if (rawNumber >= 20 && rawNumber <= 200) {
-        return rawNumber;
+        return isRealisticGoldUsdPerGram(rawNumber) ? rawNumber : null;
     }
 
     if (rawNumber > 200 && rawNumber <= 1000) {
-        return rawNumber / 31.1034768;
+        const normalized = rawNumber / 31.1034768;
+        return isRealisticGoldUsdPerGram(normalized) ? normalized : null;
     }
 
     return null;
